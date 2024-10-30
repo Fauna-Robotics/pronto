@@ -7,6 +7,7 @@
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/JointState.h>
@@ -35,6 +36,9 @@ void poseMsgFromROS(const geometry_msgs::PoseWithCovarianceStamped &msg,
 
 void poseMsgFromROS(const geometry_msgs::PoseStamped &msg,
                     PoseMeasurement &pose_meas);
+
+void zeroVelMsgFromROS(const geometry_msgs::TwistStamped &msg,
+                    PoseMeasurement &zero_vel_meas);
 
 void poseMeasurementFromROS(const nav_msgs::Odometry& ros_msg,
                             PoseMeasurement& msg);

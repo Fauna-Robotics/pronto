@@ -4,9 +4,9 @@
 
 namespace pronto {
 
-const char * RBISUpdateInterface::sensor_enum_chars = "igvlfsorxdukpabmtwy";
+const char * RBISUpdateInterface::sensor_enum_chars = "igvlfsorxdukpzabmtwy";
 const char * RBISUpdateInterface::sensor_enum_strings[] =
-    { "ins", "gps", "vicon", "laser", "laser_gpf", "scan_matcher", "optic_flow", "reset", "invalid", "rgbd", "fovis", "legodo", "pose_meas", "altimeter", "airspeed", "sideslip", "init_message", "viewer", "yawlock" };
+    { "ins", "gps", "vicon", "laser", "laser_gpf", "scan_matcher", "optic_flow", "reset", "invalid", "rgbd", "fovis", "legodo", "pose_meas", "zero_vel_meas", "altimeter", "airspeed", "sideslip", "init_message", "viewer", "yawlock" };
 
 RBISUpdateInterface::sensor_enum RBISUpdateInterface::sensor_enum_from_char(char sensor_char)
 {

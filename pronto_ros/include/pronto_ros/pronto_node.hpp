@@ -5,6 +5,7 @@
 #include "pronto_ros/ins_ros_handler.hpp"
 #include "pronto_ros/vicon_ros_handler.hpp"
 #include "pronto_ros/pose_msg_ros_handler.hpp"
+#include "pronto_ros/zero_vel_msg_ros_handler.hpp"
 #include "pronto_ros/visual_odometry_ros_handler.hpp"
 #include "pronto_ros/lidar_odometry_ros_handler.hpp"
 #include "pronto_ros/scan_matcher_ros_handler.hpp"
@@ -47,6 +48,7 @@ protected:
     std::shared_ptr<InsHandlerROS> ins_handler_;
     std::shared_ptr<PoseHandlerROS> pose_handler_;
     std::shared_ptr<ViconHandlerROS> vicon_handler_;
+    std::shared_ptr<ZeroVelHandlerROS> zero_vel_handler_;
     std::shared_ptr<VisualOdometryHandlerROS> vo_handler_;
     std::shared_ptr<LidarOdometryHandlerROS> sm_handler_;
     std::shared_ptr<ScanMatcherHandler> sm2_handler_;
@@ -167,7 +169,15 @@ void ProntoNode<JointStateMsgT, ContactStateMsgT>::init(bool subscribe) {
             if(init){
                 front_end.addInitModule(*pose_handler_, *it, topic, subscribe);
             }
-
+        }
+        if(it->compare("zero_vel_meas") == 0){
+            zero_vel_handler_ = std::make_shared<ZeroVelHandlerROS>(nh_);
+            if(active){
+                front_end.addSensingModule(*zero_vel_handler_, *it, roll_forward, publish_head, topic, subscribe);
+            }
+            if(init){
+                front_end.addInitModule(*zero_vel_handler_, *it, topic, subscribe);
+            }
         }
         if(it->compare("vicon") == 0 ){
             vicon_handler_ = std::make_shared<ViconHandlerROS>(nh_);
@@ -179,15 +189,15 @@ void ProntoNode<JointStateMsgT, ContactStateMsgT>::init(bool subscribe) {
             }
         }
         if(it->compare("bias_lock") == 0){
-          if(!nh_.getParam(*it + "/secondary_topic", secondary_topic)){
-              ROS_WARN_STREAM("Not adding sensor \"" << *it << "\".");
-              ROS_WARN_STREAM ("Param \"secondary_topic\" not available.");
-              continue;
-          }
-          if(active){
-            front_end.addSensingModule(bias_lock_handler_, *it, roll_forward, publish_head, topic, subscribe);
-            front_end.addSecondarySensingModule(bias_lock_handler_, *it, secondary_topic, subscribe);
-          }
+            if(!nh_.getParam(*it + "/secondary_topic", secondary_topic)){
+                ROS_WARN_STREAM("Not adding sensor \"" << *it << "\".");
+                ROS_WARN_STREAM ("Param \"secondary_topic\" not available.");
+                continue;
+            }
+            if(active){
+                front_end.addSensingModule(bias_lock_handler_, *it, roll_forward, publish_head, topic, subscribe);
+                front_end.addSecondarySensingModule(bias_lock_handler_, *it, secondary_topic, subscribe);
+            }
         }
         if(it->compare("fovis") == 0 ){
             vo_handler_ = std::make_shared<VisualOdometryHandlerROS>(nh_);

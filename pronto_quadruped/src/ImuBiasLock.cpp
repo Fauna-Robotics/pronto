@@ -142,25 +142,7 @@ bool ImuBiasLock::isStatic(const pronto::JointState &state)
     std::cerr << "++++++++++++++ not enough joints " << state.joint_effort.size() << " < 12 !!!\n";
     return false;
   }
-
-  // TODO: The knee joint order is hard-coded here!
-  if(std::abs(state.joint_effort[2]) < torque_threshold_){
-    if (debug_) std::cout << "++++++++++++++ [LF] not enough torque " << std::abs(state.joint_effort[2]) << " < " << torque_threshold_ << "\n";
-    return false;
-  }
-  if(std::abs(state.joint_effort[5]) < torque_threshold_){
-    if (debug_) std::cout << "++++++++++++++ [RF] not enough torque " << std::abs(state.joint_effort[5]) << " < " << torque_threshold_ << "\n";
-    return false;
-  }
-  if(std::abs(state.joint_effort[8]) < torque_threshold_){
-    if (debug_) std::cout << "++++++++++++++ [LH] not enough torque " << std::abs(state.joint_effort[8]) << " < " << torque_threshold_ << "\n";
-    return false;
-  }
-  if(std::abs(state.joint_effort[11]) < torque_threshold_){
-    if (debug_) std::cout << "++++++++++++++ [RH] not enough torque " << std::abs(state.joint_effort[11]) << " < " << torque_threshold_ << "\n";
-    return false;
-  }
-
+  
   // check that joint velocities are not bigger than eps
   for (auto el : state.joint_velocity){
     if (std::abs(el) > eps_){
