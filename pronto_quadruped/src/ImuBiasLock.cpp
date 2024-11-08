@@ -65,8 +65,8 @@ RBISUpdateInterface* ImuBiasLock::processMessage(const ImuMeasurement *msg,
     gyro_bias_history_.push_back(current_omega_);
     accel_bias_history_.push_back(current_accel_corrected_);
     if(gyro_bias_history_.size() > max_size){
-      std::cout << "Stop recording (size too big)" << std::endl;
-      std::cout << gyro_bias_history_.size() << std::endl;
+      // std::cout << "Stop recording (size too big)" << std::endl;
+      // std::cout << gyro_bias_history_.size() << std::endl;
       do_record_ = false;
     } else {
       return nullptr;
@@ -78,7 +78,7 @@ RBISUpdateInterface* ImuBiasLock::processMessage(const ImuMeasurement *msg,
   if(!do_record_ && !gyro_bias_history_.empty()) {
     if(gyro_bias_history_.size() < min_size)
     {
-      std::cerr << "Cleaning too short history " << gyro_bias_history_.size() << " < " << min_size << std::endl;
+      // std::cerr << "Cleaning too short history " << gyro_bias_history_.size() << " < " << min_size << std::endl;
       gyro_bias_history_.clear();
       accel_bias_history_.clear();
       return nullptr;
