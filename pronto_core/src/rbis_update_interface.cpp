@@ -1,6 +1,7 @@
 #include "pronto_core/rbis_update_interface.hpp"
 #include "pronto_core/rotations.hpp"
 #include <iostream>
+#include <cmath> // For std::isnan
 
 namespace pronto {
 
@@ -57,8 +58,22 @@ void RBISResetUpdate::updateFilter(const RBIS & prior_state, const RBIM & prior_
 
 void RBISIMUProcessStep::updateFilter(const RBIS & prior_state, const RBIM & prior_cov, double prior_loglikelihood)
 {
+  // The process (prediction) step for the IMU-based state.
+
+  // Initialize posterior
   posterior_state = prior_state;
   posterior_covariance = prior_cov;
+
+  // Check posterior covariance matrix symmetry
+  bool is_symmetric = posterior_covariance.isApprox(posterior_covariance.transpose(), 1e-8);
+  if (!is_symmetric) {
+      posterior_covariance = 0.5 * (posterior_covariance + posterior_covariance.transpose());
+  }
+
+  // Regularize to ensure posterior covariance matrix is positive semi-definite
+  double epsilon = 1e-12;
+  posterior_covariance.diagonal().array() += epsilon;
+
 #if DEBUG_MODE
   std::cerr << "======================================" << std::endl;
   std::cerr << "       INS process " << std::endl;
@@ -67,8 +82,14 @@ void RBISIMUProcessStep::updateFilter(const RBIS & prior_state, const RBIM & pri
   Eigen::IOFormat CleanFmt(3, 0, ", ", "\n", "[", "]");
   // TODO if this was meant to measure some sort of performance
 #endif
+
+  // INS update
+  // Apply the IMU data over a small timestep to advance the state
   insUpdateState(gyro, accelerometer, dt, posterior_state);
+
+  // Update the covariance based on the IMU process noise parameters
   insUpdateCovariance(q_gyro, q_accel, q_gyro_bias, q_accel_bias, prior_state, posterior_covariance, dt);
+
 #if DEBUG_MODE
   std::cerr << "    Prior velocity: " << prior_state.velocity().transpose().format(CleanFmt) << std::endl;
   std::cerr << "Posterior velocity: " << posterior_state.velocity().transpose().format(CleanFmt) << std::endl;
@@ -76,11 +97,27 @@ void RBISIMUProcessStep::updateFilter(const RBIS & prior_state, const RBIM & pri
   std::cerr << "Posterior position: " << posterior_state.position().transpose().format(CleanFmt) << std::endl;
 #endif
 
+  // The new log-likelihood is equal to the old one because there is no measurement-based improvement in this step
   loglikelihood = prior_loglikelihood;
 }
 
 void RBISIndexedMeasurement::updateFilter(const RBIS & prior_state, const RBIM & prior_cov, double prior_loglikelihood)
 {
+  // The measurement (correction) step using the indexed measurement.
+
+  // Ensure covariance matrix is positive semi-definite
+  RBIM prior_cov_copy = prior_cov; // Make a mutable copy
+
+  // Check prior covariance matrix symmetry
+  bool is_symmetric = prior_cov_copy.isApprox(prior_cov_copy.transpose(), 1e-8);
+  if (!is_symmetric) {
+      prior_cov_copy = 0.5 * (prior_cov_copy + prior_cov_copy.transpose());
+  }
+  // Regularize to ensure prior covariance matrix is positive semi-definite
+  double epsilon = 1e-10;
+  prior_cov_copy.diagonal().array() += epsilon;
+
+  // Local variables will hold the "delta" (correction to be applied)
   RBIS dstate;
   RBIM dcov;
 
@@ -93,6 +130,8 @@ void RBISIndexedMeasurement::updateFilter(const RBIS & prior_state, const RBIM &
     std::cout << "pcov : " << prior_cov << "\n";
   }
 #endif
+
+  // Compute the current log-likelihood (how well the measurement fits the predicted state)
   double current_loglikelihood = indexedMeasurement(measurement, measurement_cov, index, prior_state, prior_cov, dstate,
       dcov);
 
@@ -111,9 +150,8 @@ void RBISIndexedMeasurement::updateFilter(const RBIS & prior_state, const RBIM &
      << std::endl;
 #endif
 
-
+  // Apply the correction to the state and covariance to produce the posterior state and covariance
   rbisApplyDelta(prior_state, prior_cov, dstate, dcov, posterior_state, posterior_covariance);
-
 
 #if DEBUG_MODE
   is << "    Prior velocity: " << prior_state.velocity().transpose().format(CleanFmt) << std::endl;
@@ -122,22 +160,52 @@ void RBISIndexedMeasurement::updateFilter(const RBIS & prior_state, const RBIM &
   is << "Posterior position: " << posterior_state.position().transpose().format(CleanFmt) << std::endl;
 #endif
 
-
 #if DEBUG_MODE
     std::cout << " post: " << posterior_state <<"\n";
     if (verbose_cov) std::cout << "ptcov: " << posterior_covariance <<"\n";
     std::cout << "mfallon b\n";
 #endif
 
+  // Updated log-likehood accumulates the new measurement's contribution 
   loglikelihood = prior_loglikelihood + current_loglikelihood;
+
+  // Check if log-likelihood is NaN
+  if (std::isnan(loglikelihood)) {
+    // Log a warning message
+    ROS_WARN_STREAM("Log-likelihood is NaN. Ignoring Measurement. Resetting posterior to prior.");
+
+    // Reset posterior state and covariance to prior values
+    posterior_state = prior_state;
+    posterior_covariance = prior_cov;
+
+    // Reset log-likelihood to prior log-likelihood
+    loglikelihood = prior_loglikelihood;
+  }
 }
 
 void RBISIndexedPlusOrientationMeasurement::updateFilter(const RBIS & prior_state,
                                                          const RBIM & prior_cov,
                                                          double prior_loglikelihood)
 {
+  // The measurement (correction) step using the indexed measurement, for updating orientation as well.
+  
+  // Ensure covariance matrix is positive semi-definite
+  RBIM prior_cov_copy = prior_cov; // Make a mutable copy
+
+  // Check prior covariance matrix symmetry
+  bool is_symmetric = prior_cov_copy.isApprox(prior_cov_copy.transpose(), 1e-8);
+  if (!is_symmetric) {
+      prior_cov_copy = 0.5 * (prior_cov_copy + prior_cov_copy.transpose());
+  }
+  // Regularize to ensure prior covariance matrix is positive semi-definite
+  double epsilon = 1e-12;
+  prior_cov_copy.diagonal().array() += epsilon;
+
+  // Local variables will hold the "delta" (correction to be applied)
   RBIS dstate;
   RBIM dcov;
+
+  // Compute the current log-likelihood (how well the measurement fits the predicted state)
   double current_likelihood = indexedPlusOrientationMeasurement(measurement,
                                                                 orientation,
                                                                 measurement_cov,
@@ -146,6 +214,7 @@ void RBISIndexedPlusOrientationMeasurement::updateFilter(const RBIS & prior_stat
                                                                 prior_cov,
                                                                 dstate,
                                                                 dcov);
+
 #if DEBUG_MODE
   std::cerr << "======================================" << std::endl;
   std::cerr << sensorIdToString(sensor_id)  << std::endl;
@@ -155,6 +224,8 @@ void RBISIndexedPlusOrientationMeasurement::updateFilter(const RBIS & prior_stat
   std::cerr << "       Measurement: " << measurement.transpose() << std::endl
             << "           Indices: " << index.transpose() << std::endl;
 #endif
+
+  // Apply the correction to the state and covariance to produce the posterior state and covariance
   rbisApplyDelta(prior_state, prior_cov, dstate, dcov, posterior_state, posterior_covariance);
 
 #if DEBUG_MODE
@@ -163,7 +234,22 @@ void RBISIndexedPlusOrientationMeasurement::updateFilter(const RBIS & prior_stat
   std::cerr << "    Prior position: " << prior_state.position().transpose().format(CleanFmt) << std::endl;
   std::cerr << "Posterior position: " << posterior_state.position().transpose().format(CleanFmt) << std::endl;
 #endif
+
+  // Updated log-likehood accumulates the new measurement's contribution 
   loglikelihood = prior_loglikelihood + current_likelihood;
+
+  // Check if log-likelihood is NaN
+  if (std::isnan(loglikelihood)) {
+    // Log a warning message
+    ROS_WARN_STREAM("Log-likelihood is NaN. Ignoring Measurement. Resetting posterior to prior.");
+
+    // Reset posterior state and covariance to prior values
+    posterior_state = prior_state;
+    posterior_covariance = prior_cov;
+
+    // Reset log-likelihood to prior log-likelihood
+    loglikelihood = prior_loglikelihood;
+  }
 }
 
 const int RBISOpticalFlowMeasurement::m;

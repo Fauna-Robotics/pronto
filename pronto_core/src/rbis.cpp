@@ -169,6 +169,16 @@ double matrixMeasurementGetKandCovDelta(const Eigen::MatrixXd & R,
   S = R;
   S.noalias() += C * cov * C.transpose();
 
+  // Check innovation covariance matrix symmetry
+  bool is_symmetric = S.isApprox(S.transpose(), 1e-8);
+  if (!is_symmetric) {
+      S = 0.5 * (S + S.transpose());
+  }
+
+  // Regularize to ensure innovation covariance matrix is positive semi-definite
+  double epsilon = 1e-12;
+  S.diagonal().array() += epsilon;
+
   LDLT<MatrixXd> Sldlt = LDLT<MatrixXd>(S);
   //  K = self->Sigma * H.transpose() * S.inverse();
   K.transpose() = Sldlt.solve(C * cov);
