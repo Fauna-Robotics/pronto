@@ -2,6 +2,7 @@
 #include "pronto_core/rotations.hpp"
 #include <iostream>
 #include <cmath> // For std::isnan
+#include <ros/ros.h> // For logging
 
 namespace pronto {
 
@@ -169,7 +170,7 @@ void RBISIndexedMeasurement::updateFilter(const RBIS & prior_state, const RBIM &
   // Updated log-likehood accumulates the new measurement's contribution 
   loglikelihood = prior_loglikelihood + current_loglikelihood;
 
-  // Check if log-likelihood is NaN
+  // Check if loglikelihood is NaN
   if (std::isnan(loglikelihood)) {
     // Log a warning message
     ROS_WARN_STREAM("Log-likelihood is NaN. Ignoring Measurement. Resetting posterior to prior.");
@@ -193,7 +194,7 @@ void RBISIndexedPlusOrientationMeasurement::updateFilter(const RBIS & prior_stat
   RBIM prior_cov_copy = prior_cov; // Make a mutable copy
 
   // Check prior covariance matrix symmetry
-  bool is_symmetric = prior_cov_copy.isApprox(prior_cov_copy.transpose(), 1e-8);
+  bool is_symmetric = prior_cov_copy.isApprox(prior_cov_copy.transpose(), 1e-8); // Symmetry check
   if (!is_symmetric) {
       prior_cov_copy = 0.5 * (prior_cov_copy + prior_cov_copy.transpose());
   }
@@ -238,7 +239,7 @@ void RBISIndexedPlusOrientationMeasurement::updateFilter(const RBIS & prior_stat
   // Updated log-likehood accumulates the new measurement's contribution 
   loglikelihood = prior_loglikelihood + current_likelihood;
 
-  // Check if log-likelihood is NaN
+// Check if loglikelihood is NaN
   if (std::isnan(loglikelihood)) {
     // Log a warning message
     ROS_WARN_STREAM("Log-likelihood is NaN. Ignoring Measurement. Resetting posterior to prior.");

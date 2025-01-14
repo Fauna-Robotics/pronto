@@ -17,6 +17,9 @@
 
   <license>LGPLv2.1</license>
 
+  <build_depend>roscpp</build_depend> 
+  <run_depend>roscpp</run_depend>
+
   <buildtool_depend>catkin</buildtool_depend>
   <test_depend>rosunit</test_depend>
 </package>

@@ -6,7 +6,9 @@ set(PRONTO_CORE_LIB ${PROJECT_NAME})
 
 add_compile_options(-Wall)
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+)
 
 find_package(Eigen3 REQUIRED)
 
