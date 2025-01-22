@@ -32,7 +32,7 @@ StanceEstimatorROS::StanceEstimatorROS(ros::NodeHandle &nh,
      StanceEstimator(feet_forces), nh_(nh)
 {
     // Initialize the publisher for GRF values
-    foot_grf_pub_ = nh_.advertise<std_msgs::Float32MultiArray>("/pronto/foot_grfs", 10);
+    foot_grf_pub_ = nh_.advertise<std_msgs::Float32MultiArray>("/pronto/foot_grf_estimate", 10);
 
     // get parameters for the leg odometry
     std::string legodo_prefix = "legodo/";
