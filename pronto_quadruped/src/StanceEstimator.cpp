@@ -241,7 +241,13 @@ LegVectorMap StanceEstimator::getGRF() {
 }
 
 bool StanceEstimator::getGRF(LegVectorMap& grf){
- return feet_contact_forces_.getFeetGRF(q_, qd_, tau_, orient_, grf, qdd_, xd_, xdd_, omega_, omegad_);
+    bool success = feet_contact_forces_.getFeetGRF(q_, qd_, tau_, orient_, grf, qdd_, xd_, xdd_, omega_, omegad_);
+    
+    if (success) {
+        publishGRF(grf);
+    }
+    
+    return success;
 }
 
 void StanceEstimator::getGrf_W(LegVectorMap & grf) {

@@ -25,6 +25,7 @@
 
 #include <pronto_quadruped/StanceEstimator.hpp>
 #include <ros/node_handle.h>
+#include <std_msgs/Float32MultiArray.h>
 
 namespace pronto {
 namespace quadruped {
@@ -33,8 +34,10 @@ class StanceEstimatorROS : public StanceEstimator {
 public:
     StanceEstimatorROS(ros::NodeHandle& nh,
                        FeetContactForces& feet_forces);
+    void publishGRF(const LegVectorMap& grf);
 private:
     ros::NodeHandle& nh_;
+    ros::Publisher foot_grf_pub_;  // The publisher for the GRFs
 };
 }  // namespace quadruped
 }  // namespace pronto

@@ -22,6 +22,7 @@
  */
 
 #include "pronto_quadruped_ros/stance_estimator_ros.hpp"
+#include <std_msgs/Float32MultiArray.h>
 
 namespace pronto {
 namespace quadruped {
@@ -30,6 +31,9 @@ StanceEstimatorROS::StanceEstimatorROS(ros::NodeHandle &nh,
                                        FeetContactForces &feet_forces) :
      StanceEstimator(feet_forces), nh_(nh)
 {
+    // Initialize the publisher for GRF values
+    foot_grf_pub_ = nh_.advertise<std_msgs::Float32MultiArray>("/pronto/foot_grfs", 10);
+
     // get parameters for the leg odometry
     std::string legodo_prefix = "legodo/";
 
@@ -86,6 +90,29 @@ StanceEstimatorROS::StanceEstimatorROS(ros::NodeHandle &nh,
     }
     setParams(beta, stance_threshold, hysteresis_low, hysteresis_high, stance_hysteresis_delay_low, stance_hysteresis_delay_high);
 }
+
+void StanceEstimatorROS::publishGRF(const LegVectorMap& grf) {
+    std_msgs::Float32MultiArray grf_msg;
+
+    grf_msg.data.push_back(grf[LegID::LF][0]);
+    grf_msg.data.push_back(grf[LegID::LF][1]);
+    grf_msg.data.push_back(grf[LegID::LF][2]);
+
+    grf_msg.data.push_back(grf[LegID::RF][0]);
+    grf_msg.data.push_back(grf[LegID::RF][1]);
+    grf_msg.data.push_back(grf[LegID::RF][2]);
+
+    grf_msg.data.push_back(grf[LegID::LH][0]);
+    grf_msg.data.push_back(grf[LegID::LH][1]);
+    grf_msg.data.push_back(grf[LegID::LH][2]);
+
+    grf_msg.data.push_back(grf[LegID::RH][0]);
+    grf_msg.data.push_back(grf[LegID::RH][1]);
+    grf_msg.data.push_back(grf[LegID::RH][2]);
+
+    foot_grf_pub_.publish(grf_msg);
+}
+
 
 }  // namespace quadruped
 }  // namespace pronto

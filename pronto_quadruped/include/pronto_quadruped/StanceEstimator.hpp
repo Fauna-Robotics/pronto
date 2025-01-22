@@ -98,6 +98,9 @@ public:
 
     virtual ~StanceEstimator() = default;
 
+    // Declare a virtual function for publishing GRF (to be overridden by derived classes)
+    virtual void publishGRF(const LegVectorMap& grf) {}
+
     /**
      * @brief setJointStates
      * @param q
