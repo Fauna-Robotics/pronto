@@ -40,11 +40,10 @@ class ImuBiasLock : public DualSensingModule<ImuMeasurement,pronto::JointState>
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 public:
-    // the measurement and index sizes is 8: 3 for gyro bias, 3 for accel bias
-    // and 2 for roll/pitch estimation
-    using MeasVector = Eigen::Matrix<double, 8, 1>;
-    using IndexVector = Eigen::Matrix<int, 8, 1>;
-    using CovMatrix = Eigen::Matrix<double, 8, 8>;
+    // the measurement and index sizes is 6: 3 for gyro bias, 3 for accel bias
+    using MeasVector = Eigen::Matrix<double, 6, 1>;
+    using IndexVector = Eigen::Matrix<int, 6, 1>;
+    using CovMatrix = Eigen::Matrix<double, 6, 6>;
 public:
     ImuBiasLock(const Eigen::Isometry3d& ins_to_body_ = Eigen::Isometry3d::Identity(),
                 const ImuBiasLockConfig& cfg = ImuBiasLockConfig());

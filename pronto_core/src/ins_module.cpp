@@ -29,10 +29,11 @@ InsModule::InsModule(const InsConfig &config, const Eigen::Affine3d &ins_to_body
     accel_bias_initial(config.accel_bias_initial),
     accel_bias_recalc_at_start(config.accel_bias_recalc_at_start)
 {
-    cov_accel = std::pow(config.cov_accel, 2);
-    cov_gyro = std::pow(config.cov_gyro * M_PI / 180.0, 2);
-    cov_accel_bias = std::pow(config.cov_accel_bias, 2);
-    cov_gyro_bias = std::pow(config.cov_gyro_bias * M_PI / 180.0,2);
+    // Conversion is already done in ins_ros_handler.cpp
+    cov_accel = config.cov_accel;
+    cov_gyro = config.cov_gyro;
+    cov_accel_bias = config.cov_accel_bias;
+    cov_gyro_bias = config.cov_gyro_bias;
 }
 
 bool InsModule::allInitializedExcept(const std::map<std::string, bool> &_sensors_initialized,
