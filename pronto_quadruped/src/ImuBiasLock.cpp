@@ -36,7 +36,6 @@ ImuBiasLock::ImuBiasLock(const Eigen::Isometry3d& ins_to_body,
   z_indices.head<3>() = RBIS::gyroBiasInds();
   // accel bias indices
   z_indices.block<3,1>(3,0) = RBIS::accelBiasInds();
-  // roll and pitch indices
   gravity_vector_ = Eigen::Vector3d::UnitZ() * g_val;
 
   z_covariance = CovMatrix::Zero();
