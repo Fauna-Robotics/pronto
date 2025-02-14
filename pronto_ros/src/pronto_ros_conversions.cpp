@@ -102,9 +102,8 @@ void poseMsgFromROS(const geometry_msgs::PoseStamped &msg,
 void zeroVelMsgFromROS(const geometry_msgs::TwistStamped &msg,
                     PoseMeasurement &zero_vel_meas)
 {
-  zero_vel_meas.linear_vel << msg.twist.linear.x,
-      msg.twist.linear.y,
-      msg.twist.linear.z;
+  zero_vel_meas.linear_vel << msg.twist.linear.x, msg.twist.linear.y, msg.twist.linear.z;
+  zero_vel_meas.angular_vel << msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z;
   zero_vel_meas.utime = (uint64_t) msg.header.stamp.toNSec() / 1000;
 }
 
