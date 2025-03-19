@@ -4,7 +4,8 @@ project(pronto_biped_core)
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(catkin REQUIRED COMPONENTS pronto_utils
-                                        pronto_core)
+                                        pronto_core
+                                        pronto_msgs)
 
 
 set(LEGODO_LIB_NAME pronto_biped_legodo)
@@ -12,7 +13,8 @@ set(LEGODO_LIB_NAME pronto_biped_legodo)
 catkin_package(INCLUDE_DIRS include
                LIBRARIES ${LEGODO_LIB_NAME}
                CATKIN_DEPENDS pronto_utils
-                              pronto_core)
+                              pronto_core
+                              pronto_msgs)
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 

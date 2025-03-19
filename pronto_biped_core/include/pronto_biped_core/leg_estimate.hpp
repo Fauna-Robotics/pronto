@@ -59,8 +59,8 @@ public:
       n_control_contacts_right_ = n_control_contacts_right_in;
     }
 
-    inline void setForwardKinematics(const Eigen::Isometry3d& left,
-                                     const Eigen::Isometry3d& right);
+    void setForwardKinematics(const Eigen::Isometry3d& left,
+                              const Eigen::Isometry3d& right);
     
     // Update the running leg odometry solution
     // returns: odometry_status - a foot contact classification
