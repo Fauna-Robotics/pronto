@@ -187,12 +187,12 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
 
   if (!initialized_){
     if (left_contact && right_contact){
-      std::cout << pv << ">0 | Initializing. both in contact with left foot as primary\n";
+      if (verbose_ >= 1) std::cout << pv << ">0 | Initializing. both in contact with left foot as primary\n";
       mode_ = WalkMode::LEFT_PRIME_RIGHT_STAND;
       initialized_ = true;
       return 2;
     }else{
-      std::cout << pv << ">8 | Not initialized yet: both feet are not in contact\n";
+      if (verbose_ >= 1) std::cout << pv << ">8 | Not initialized yet: both feet are not in contact\n";
       return -1;
     }
   }

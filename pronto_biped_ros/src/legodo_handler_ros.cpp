@@ -1,16 +1,13 @@
 #include "pronto_biped_ros/legodo_handler_ros.hpp"
 #include <pronto_ros/pronto_ros_conversions.hpp>
+#include <std_msgs/String.h>
 
 namespace pronto {
 namespace biped {
 
-LegOdometryHandler::LegOdometryHandler(ros::NodeHandle& nh,
-                                       std::string urdf_string) :
-  nh_(nh),
-  legodo_msg_(30),
-  urdf_string_(urdf_string)
-{
-  std::string prefix = "/state_estimator_pronto/legodo/";
+LegOdometryHandler::LegOdometryHandler(ros::NodeHandle& nh)
+    : nh_(nh), legodo_msg_(15) {
+  std::string prefix = "/pronto/legodo/";
   if(!nh_.getParam(prefix + "torque_adjustment", legodo_cfg_.use_torque_adjustment_)){
     ROS_WARN_STREAM("Couldn't find parameter \"torque_adjustment\"."
                     << " Using default : "
@@ -104,19 +101,39 @@ LegOdometryHandler::LegOdometryHandler(ros::NodeHandle& nh,
                     << " Using default: "
                     << std::boolalpha << legodo_cfg_.odometer_cfg.use_controller_input);
   }
-  std::string topic_force_torque;
-  if(!nh_.getParam(prefix + "topic_force_torque", topic_force_torque)){
-    ROS_WARN_STREAM("Couldn't find parameter \"topic_force_torque\".");
+  // Schmitt Trigger Parameters
+  if (!nh_.getParam(prefix + "schmitt_low_threshold", legodo_cfg_.odometer_cfg.schmitt_low_threshold)) {
+    ROS_WARN_STREAM(
+        "Couldn't find parameter \"schmitt_low_threshold\". Using default: "
+        << legodo_cfg_.odometer_cfg.schmitt_low_threshold);
   }
-  ROS_INFO_STREAM("Subscribing to auxiliary topic: " << topic_force_torque);
-  force_torque_sub_ = nh_.subscribe(topic_force_torque, 10, &LegOdometryHandler::forceTorqueCallback, this);
 
-  std::string topic_ctrl_input;
-  if(!nh_.getParam(prefix + "topic_ctrl_input", topic_ctrl_input)){
-    ROS_WARN_STREAM("Couldn't find parameter \"topic_ctrl_input\".");
+  if (!nh_.getParam(prefix + "schmitt_high_threshold", legodo_cfg_.odometer_cfg.schmitt_high_threshold)) {
+    ROS_WARN_STREAM(
+        "Couldn't find parameter \"schmitt_high_threshold\". Using default: "
+        << legodo_cfg_.odometer_cfg.schmitt_high_threshold);
   }
-  ROS_INFO_STREAM("Subscribing to auxiliary topic: " << topic_force_torque);
-  ctrl_foot_contact_sub_ = nh_.subscribe(topic_ctrl_input, 10, &LegOdometryHandler::ctrlFootContactCallback, this);
+
+  if (!nh_.getParam(prefix + "schmitt_low_delay", legodo_cfg_.odometer_cfg.schmitt_low_delay)) {
+    ROS_WARN_STREAM(
+        "Couldn't find parameter \"schmitt_low_delay\". Using default: "
+        << legodo_cfg_.odometer_cfg.schmitt_low_delay);
+  }
+
+  if (!nh_.getParam(prefix + "schmitt_high_delay", legodo_cfg_.odometer_cfg.schmitt_high_delay)) {
+    ROS_WARN_STREAM(
+        "Couldn't find parameter \"schmitt_high_delay\". Using default: "
+        << legodo_cfg_.odometer_cfg.schmitt_high_delay);
+  }
+
+  // Foot Wrench Subscriber
+  force_torque_sub_ =
+      nh_.subscribe("/biped/estimated_foot_wrench", 10,
+                    &LegOdometryHandler::forceTorqueCallback, this);
+
+  // Forward Kinematics Subscriber
+  fk_sub_ = nh_.subscribe("/biped/cartesian_poses", 10,
+                          &LegOdometryHandler::forwardKinematicsCallback, this);
 
   if(!nh_.getParam(prefix + "initialization_mode", legodo_cfg_.odometer_cfg.initialization_mode)){
     ROS_WARN_STREAM("Couldn't find parameter \"initialization_mode\".");
@@ -157,12 +174,12 @@ LegOdometryHandler::LegOdometryHandler(ros::NodeHandle& nh,
     ROS_WARN_STREAM("Couldn't find parameter \"active_joints\".");
   }
 
+  fk_.reset(new pronto::biped::BipedForwardKinematicsExternal(nh));
 
-  fk_.reset(new BipedForwardKinematicsROS(urdf_string,
-                                          legodo_cfg_.odometer_cfg.left_foot_name,
-                                          legodo_cfg_.odometer_cfg.right_foot_name));
+  legodo_module_.reset(new LegOdometryModule(legodo_cfg_));
 
-  legodo_module_.reset(new LegOdometryModule(*fk_, legodo_cfg_));
+  // Create a publisher for the primary foot ID
+  primary_foot_pub_ = nh_.advertise<std_msgs::String>("/biped/primary_foot", 1);
 }
 
 RBISUpdateInterface* LegOdometryHandler::processMessage(const sensor_msgs::JointState *msg,
@@ -176,14 +193,33 @@ RBISUpdateInterface* LegOdometryHandler::processMessage(const sensor_msgs::Joint
   }
   if(!init){
     joint_names_ = msg->name;
-    fk_->setJointNames(joint_names_);
     for(const auto& el : joint_names_){
       std::cerr << "Joint " << el << std::endl;
     }
     init = true;
   }
   jointStateFromROS(*msg, legodo_msg_);
-  return legodo_module_->processMessage(&legodo_msg_, est);
+  RBISUpdateInterface* meas = legodo_module_->processMessage(&legodo_msg_, est);
+
+  // Publish primary foot
+  int foot_id = legodo_module_->getPrimaryFootID();
+  std::string primary_foot_id;
+  switch (foot_id) {
+    case 0:  // FootID::LEFT
+      primary_foot_id = "LEFT";
+      break;
+    case 1:  // FootID::RIGHT
+      primary_foot_id = "RIGHT";
+      break;
+    default:
+      primary_foot_id = "UNKNOWN";
+      break;
+  }
+  std_msgs::String foot_msg;
+  foot_msg.data = primary_foot_id;
+  primary_foot_pub_.publish(foot_msg);
+
+  return meas;
 }
 
 bool LegOdometryHandler::processMessageInit(const sensor_msgs::JointState *msg,
@@ -195,20 +231,25 @@ bool LegOdometryHandler::processMessageInit(const sensor_msgs::JointState *msg,
 {
   if(!init){
     joint_names_ = msg->name;
-    fk_->setJointNames(joint_names_);
     init = true;
   }
   jointStateFromROS(*msg, legodo_msg_);
   return legodo_module_->processMessageInit(&legodo_msg_, sensor_initialized, default_state, default_cov, init_state, init_cov);
 }
 
-void LegOdometryHandler::ctrlFootContactCallback(const pronto_msgs::ControllerFootContactConstPtr & msg){
-  legodo_module_->setControllerInput(msg->num_left_foot_contacts, msg->num_right_foot_contacts);
-}
 
-void LegOdometryHandler::forceTorqueCallback(const pronto_msgs::BipedForceTorqueSensorsConstPtr &msg){
+void LegOdometryHandler::forceTorqueCallback(const pronto_msgs::FootWrenchesConstPtr& msg){
   forceTorqueFromROS(*msg, ft_msg_);
   legodo_module_->setForceTorque(ft_msg_);
+}
+
+void LegOdometryHandler::forwardKinematicsCallback(
+    const pronto_msgs::BipedCartesianPosesConstPtr& msg) {
+  // Pass the FK message to the leg odometry module.
+  legodo_module_->updateForwardKinematics(*msg);
+  // Store the latest FK measurement.
+  latest_fk_msg_ = *msg;
+  ROS_DEBUG("Received new forward kinematics data");
 }
 
 }  // namespace biped

@@ -66,7 +66,7 @@ YawLockHandlerROS::YawLockHandlerROS(ros::NodeHandle &nh, std::string urdf_strin
   if(!nh_.getParam(ins_param_prefix + "frame", imu_frame)){
     ROS_FATAL_STREAM("Couldn't find parameter " << ins_param_prefix << "frame");
   };
-  std::string base_frame = "base";
+  std::string base_frame = "torso";
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tf_imu_to_body_listener_(tfBuffer);
 
@@ -84,7 +84,7 @@ YawLockHandlerROS::YawLockHandlerROS(ros::NodeHandle &nh, std::string urdf_strin
     }
   }
 
-  fk_.reset(new BipedForwardKinematicsROS(urdf_string, cfg.left_standing_link, cfg.right_standing_link));
+  fk_.reset(new pronto::biped::BipedForwardKinematicsExternal(nh));
 
   yawlock_module_.reset(new YawLockModule(*fk_, cfg, ins_to_body));
 }

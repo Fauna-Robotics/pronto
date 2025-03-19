@@ -5,7 +5,7 @@
 #include <sensor_msgs/Imu.h>
 #include <ros/node_handle.h>
 #include <pronto_biped_core/yawlock_module.hpp>
-#include "pronto_biped_ros/forward_kinematics_ros.hpp"
+#include <pronto_biped_commons/forward_kinematics.hpp>
 
 namespace pronto {
 namespace biped {
@@ -29,7 +29,7 @@ public:
 
 protected:
   ros::NodeHandle& nh_;
-  std::unique_ptr<BipedForwardKinematicsROS> fk_;
+  std::unique_ptr<pronto::biped::BipedForwardKinematicsExternal> fk_;
   std::unique_ptr<YawLockModule> yawlock_module_;
   pronto::JointState joint_state_meas_;
   pronto::ImuMeasurement imu_meas_;

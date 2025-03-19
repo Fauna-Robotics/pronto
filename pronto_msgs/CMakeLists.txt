@@ -11,9 +11,11 @@ add_message_files(FILES  VisualOdometryUpdate.msg
                          JointStateWithAcceleration.msg
                          LidarOdometryUpdate.msg
                          ControllerFootContact.msg
-                         BipedForceTorqueSensors.msg
                          QuadrupedForceTorqueSensors.msg
-                         VelocityWithSigmaBounds.msg)
+                         VelocityWithSigmaBounds.msg
+                         BipedCartesianPoses.msg
+                         CartesianPose.msg
+                         FootWrenches.msg)
 
 generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 

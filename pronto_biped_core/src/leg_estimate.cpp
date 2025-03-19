@@ -312,7 +312,7 @@ bool LegEstimator::legOdometryGravitySlavedAlways(const Eigen::Isometry3d& body_
     odom_to_secondary_foot_ = odom_to_body_ * body_to_r_foot;
     primary_foot_ = FootID::LEFT;
   }else{
-    std::cout << "initialized but unknown update: " << static_cast<int>(contact_status) << " and " << (int) primary_foot_ << "\n";
+    if (verbose_>1) std::cout << "initialized but unknown update: " << static_cast<int>(contact_status) << " and " << (int) primary_foot_ << "\n";
   }
 
   return init_this_iteration;

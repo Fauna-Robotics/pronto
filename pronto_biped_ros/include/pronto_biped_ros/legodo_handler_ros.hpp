@@ -3,11 +3,10 @@
 #include <sensor_msgs/JointState.h>
 #include <ros/node_handle.h>
 #include <pronto_biped_core/legodo_module.hpp>
-#include <pronto_msgs/BipedForceTorqueSensors.h>
-#include <pronto_msgs/ControllerFootContact.h>
+#include <pronto_msgs/BipedCartesianPoses.h>
+#include <pronto_msgs/FootWrenches.h>
 #include <pronto_ros/pronto_ros_conversions.hpp>
-#include "pronto_biped_ros/forward_kinematics_ros.hpp"
-
+#include <pronto_biped_commons/forward_kinematics.hpp>
 
 namespace pronto {
 namespace biped {
@@ -16,7 +15,7 @@ class LegOdometryHandler : public pronto::SensingModule<sensor_msgs::JointState>
 public:
 
   LegOdometryHandler() = delete;
-  LegOdometryHandler(ros::NodeHandle& nh, std::string urdf_string);
+  LegOdometryHandler(ros::NodeHandle& nh);
 
   RBISUpdateInterface* processMessage(const sensor_msgs::JointState *msg,
                                       StateEstimator *est) override;
@@ -27,22 +26,34 @@ public:
                           const RBIM &default_cov,
                           RBIS &init_state,
                           RBIM &init_cov) override;
-public:
-  void forceTorqueCallback(const pronto_msgs::BipedForceTorqueSensorsConstPtr& msg);
-  void ctrlFootContactCallback(const pronto_msgs::ControllerFootContactConstPtr& msg);
-protected:
+
+  void forceTorqueCallback(const pronto_msgs::FootWrenchesConstPtr& msg);
+  void forwardKinematicsCallback(
+      const pronto_msgs::BipedCartesianPosesConstPtr& msg);
+
+ protected:
+  // ROS node
   ros::NodeHandle nh_;
+
+  // Subscribers
+  ros::Subscriber force_torque_sub_;
+  ros::Subscriber fk_sub_;
+
+  // Publisher
+  ros::Publisher primary_foot_pub_;
+
+  // Latest messages
+  pronto_msgs::BipedCartesianPoses latest_fk_msg_;
+  JointState legodo_msg_;
+  pronto::ForceTorqueSensorArray ft_msg_;
+
+  // Parameters and Variables
   bool init = false;
   std::unique_ptr<LegOdometryModule> legodo_module_;
-  ros::Subscriber ctrl_foot_contact_sub_;
-  ros::Subscriber force_torque_sub_;
-  std::string urdf_string_;
-  JointState legodo_msg_;
   LegOdometryConfig legodo_cfg_;
-  pronto::ForceTorqueSensorArray ft_msg_;
   std::vector<std::string> joint_names_;
-  int active_joints_ = 30;
-  std::unique_ptr<BipedForwardKinematicsROS> fk_;
+  int active_joints_ = 15;
+  std::unique_ptr<pronto::biped::BipedForwardKinematicsExternal> fk_;
 };
 
 }
