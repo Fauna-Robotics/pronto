@@ -120,7 +120,7 @@ LegEstimator::LegEstimator(const LegOdometerConfig& cfg) :
   //TODO class names with CamelCase: FootContactClassifier
   foot_contact_classify_.reset(new FootContactClassifier(publish_diagnostics_));
 
-  verbose_ = 1;
+  verbose_ = -1;
 
   previous_utime_ = 0; // Set utimes to known values
   current_utime_ = 0;
@@ -264,7 +264,7 @@ bool LegEstimator::legOdometryGravitySlavedAlways(const Eigen::Isometry3d& body_
     odom_to_body_ = odom_to_primary_foot_fixed_ * body_to_l_foot.inverse() ;
     odom_to_secondary_foot_ = odom_to_body_ * body_to_r_foot;
   }else if (contact_status == ContactStatusID::RIGHT_NEW && primary_foot_ == FootID::LEFT){
-    std::cout << "2 Transition Odometry to right foot. Fix foot, update pelvis position\n";
+    if (verbose_>1) std::cout << "2 Transition Odometry to right foot. Fix foot, update pelvis position\n";
     // When transitioning, take the passive position of the other foot
     // from the previous iteration. this will now be the fixed foot
     // At the instant of transition, slave the pelvis position to gravity:
@@ -296,7 +296,7 @@ bool LegEstimator::legOdometryGravitySlavedAlways(const Eigen::Isometry3d& body_
     odom_to_body_ = odom_to_primary_foot_fixed_ * body_to_r_foot.inverse() ;
     odom_to_secondary_foot_ = odom_to_body_ * body_to_l_foot;
   }else if (contact_status == ContactStatusID::LEFT_NEW && primary_foot_ == FootID::RIGHT){
-    std::cout << "2 Transition Odometry to left foot. Fix foot, update pelvis position\n";
+    if (verbose_>1) std::cout << "2 Transition Odometry to left foot. Fix foot, update pelvis position\n";
 
     // When transitioning, take the passive position of the other foot
     // from the previous iteration. this will now be the fixed foot
@@ -504,7 +504,7 @@ float LegEstimator::updateOdometry(const std::vector<std::string>& joint_name,
 
     if ((contact_status == ContactStatusID::LEFT_NEW) || (contact_status == ContactStatusID::RIGHT_NEW) )
     {
-      std::cout << "3 Leg Estimate: Changing Foot Constraint\n";
+      if (verbose_>1) std::cout << "3 Leg Estimate: Changing Foot Constraint\n";
       world_to_primary_foot_transition_ = world_to_primary_foot_slide_;
       world_to_primary_foot_transition_init_ = true;
       if (publish_diagnostics_) { // this was enabled by default for a long time

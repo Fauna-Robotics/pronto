@@ -181,45 +181,28 @@ void lidarOdometryFromROS(const pronto_msgs::LidarOdometryUpdate &ros_msg,
   msg.pose_covariance = Eigen::Map<const PoseCovariance, Eigen::Unaligned>(ros_msg.covariance.data(),6,6);
 }
 
-void forceTorqueFromROS(const pronto_msgs::BipedForceTorqueSensors& ros_msg,
+void forceTorqueFromROS(const pronto_msgs::FootWrenches& ros_msg,
                         pronto::ForceTorqueSensorArray& msg) {
-  msg.num_sensors = 4;
-  msg.names = {"l_foot", "r_foot", "l_hand", "r_hand"};
+  msg.num_sensors = 2;
   msg.utime = ros_msg.header.stamp.toNSec() * 1e-3;
   msg.sensors.resize(msg.num_sensors);
   pronto::ForceTorqueSensor ft;
   ft.utime = msg.utime;
-  ft.force[0] = ros_msg.l_foot.force.x;
-  ft.force[1] = ros_msg.l_foot.force.y;
-  ft.force[2] = ros_msg.l_foot.force.z;
-  ft.moment[0] = ros_msg.l_foot.torque.x;
-  ft.moment[1] = ros_msg.l_foot.torque.y;
-  ft.moment[2] = ros_msg.l_foot.torque.z;
+  ft.force[0] = ros_msg.left.force.x;
+  ft.force[1] = ros_msg.left.force.y;
+  ft.force[2] = ros_msg.left.force.z;
+  ft.moment[0] = ros_msg.left.torque.x;
+  ft.moment[1] = ros_msg.left.torque.y;
+  ft.moment[2] = ros_msg.left.torque.z;
   msg.sensors[0] = ft;
 
-  ft.force[0] = ros_msg.r_foot.force.x;
-  ft.force[1] = ros_msg.r_foot.force.y;
-  ft.force[2] = ros_msg.r_foot.force.z;
-  ft.moment[0] = ros_msg.r_foot.torque.x;
-  ft.moment[1] = ros_msg.r_foot.torque.y;
-  ft.moment[2] = ros_msg.r_foot.torque.z;
+  ft.force[0] = ros_msg.right.force.x;
+  ft.force[1] = ros_msg.right.force.y;
+  ft.force[2] = ros_msg.right.force.z;
+  ft.moment[0] = ros_msg.right.torque.x;
+  ft.moment[1] = ros_msg.right.torque.y;
+  ft.moment[2] = ros_msg.right.torque.z;
   msg.sensors[1] = ft;
-
-  ft.force[0] = ros_msg.l_hand.force.x;
-  ft.force[1] = ros_msg.l_hand.force.y;
-  ft.force[2] = ros_msg.l_hand.force.z;
-  ft.moment[0] = ros_msg.l_hand.torque.x;
-  ft.moment[1] = ros_msg.l_hand.torque.y;
-  ft.moment[2] = ros_msg.l_hand.torque.z;
-  msg.sensors[2] = ft;
-
-  ft.force[0] = ros_msg.r_hand.force.x;
-  ft.force[1] = ros_msg.r_hand.force.y;
-  ft.force[2] = ros_msg.r_hand.force.z;
-  ft.moment[0] = ros_msg.r_hand.torque.x;
-  ft.moment[1] = ros_msg.r_hand.torque.y;
-  ft.moment[2] = ros_msg.r_hand.torque.z;
-  msg.sensors[3] = ft;
 }
 
 }
