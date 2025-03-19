@@ -9,7 +9,7 @@
 namespace pronto {
 namespace biped {
 
-YawLockHandlerROS::YawLockHandlerROS(ros::NodeHandle &nh, std::string urdf_string)
+YawLockHandlerROS::YawLockHandlerROS(ros::NodeHandle &nh)
   : nh_(nh)
 {
   std::string prefix = "bias_lock/";

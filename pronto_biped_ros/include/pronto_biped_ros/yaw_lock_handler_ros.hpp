@@ -11,7 +11,7 @@ namespace pronto {
 namespace biped {
 class YawLockHandlerROS : public DualSensingModule<sensor_msgs::Imu, sensor_msgs::JointState> {
 public:
-  YawLockHandlerROS(ros::NodeHandle& nh, std::string urdf_string);
+  YawLockHandlerROS(ros::NodeHandle& nh);
   inline virtual ~YawLockHandlerROS() {}
 
 
