@@ -1,29 +1,34 @@
 #include "pronto_biped_core/legodo_module.hpp"
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
+#include <cmath>
+#include <iostream>
+#include "Eigen/Geometry"
+#include "pronto_msgs/BipedCartesianPoses.h"
 
 namespace pronto {
 namespace biped {
 
-LegOdometryModule::LegOdometryModule(BipedForwardKinematics& fk, const LegOdometryConfig &cfg) :
-    leg_est_(new LegEstimator(fk, cfg.odometer_cfg)),
+LegOdometryModule::LegOdometryModule(const LegOdometryConfig &cfg) :
+    leg_est_(new LegEstimator(cfg.odometer_cfg)),
     leg_odo_common_(new LegOdoCommon(cfg.common_cfg)),
     use_torque_adjustment_(cfg.use_torque_adjustment_),
     zero_initial_velocity(cfg.zero_initial_velocity)
-
 {
     std::cout << "LegOdo will compute directly, in thread" << std::endl;
 
     if (use_torque_adjustment_){
       std::cout << "Torque-based joint angle adjustment: Using\n";
-
       torque_adjustment_.reset(new EstimateTools::TorqueAdjustment(cfg.torque_adj_names_,
                                                                    cfg.torque_adj_gains_));
-
     } else {
       std::cout << "Not using torque-based joint angle adjustment." << std::endl;
     }
 
     std::cout << "Will assume zero kinematic velocity for first "
               <<  zero_initial_velocity << " tics" << std::endl;
+
+    leg_est_.reset(new LegEstimator(cfg.odometer_cfg));
 }
 
 RBISUpdateInterface* LegOdometryModule::processMessage(const JointState *msg,
@@ -46,19 +51,18 @@ RBISUpdateInterface* LegOdometryModule::processMessage(const JointState *msg,
     std::cerr << "force_torque_.sensors[0].force[2] = " <<  force_torque_.sensors[0].force[2] << std::endl;
 
     // 1. Do the Leg Odometry Integration
-    leg_est_->setFootSensing(FootSensing(fabs(force_torque_.sensors[0].force[2]),
-                                              force_torque_.sensors[0].moment[0],
-                                              force_torque_.sensors[0].moment[1]),
-                             FootSensing(fabs(force_torque_.sensors[1].force[2]),
-                                              force_torque_.sensors[1].moment[0],
-                                              force_torque_.sensors[1].moment[1]));
+    leg_est_->setFootSensing(FootSensing(force_torque_.sensors[0].force[2],
+                                        force_torque_.sensors[0].moment[0],
+                                        force_torque_.sensors[0].moment[1]),
+                            FootSensing(force_torque_.sensors[1].force[2],
+                                        force_torque_.sensors[1].moment[0],
+                                        force_torque_.sensors[1].moment[1]));
 
     leg_est_->setControlContacts(n_control_contacts_left_,
                                  n_control_contacts_right_);
-
     // 1.1 Apply the joint torque-to-angle adjustment
     // TODO: this should probably be done inside the leg_est class and not here
-    std::vector<double> mod_position = msg->joint_position;;
+    std::vector<double> mod_position = msg->joint_position;
     std::vector<double> mod_effort = msg->joint_effort;
 
     if (use_torque_adjustment_) {
@@ -123,6 +127,42 @@ bool LegOdometryModule::processMessageInit(const JointState *msg,
 void LegOdometryModule::setForceTorque(const ForceTorqueSensorArray &array){
     force_torque_ = array;
     force_torque_init_ = true;
+}
+
+
+void LegOdometryModule::updateForwardKinematics(
+    const pronto_msgs::BipedCartesianPoses& fk_msg) {
+  tf::Transform left_tf, right_tf;
+  left_tf.setIdentity();
+  right_tf.setIdentity();
+
+  bool left_found = false;
+  bool right_found = false;
+
+  // Loop over all CartesianPose entries
+  for (size_t i = 0; i < fk_msg.cartesian_poses.size(); ++i) {
+    const pronto_msgs::CartesianPose& cp = fk_msg.cartesian_poses[i];
+    // Check joint IDs: 15 for left foot, 16 for right foot // ANA make these global variables or input parameters
+    if (cp.joint_id == 15) {
+      tf::poseMsgToTF(cp.cartesian_pose.pose, left_tf);
+      left_found = true;
+    } else if (cp.joint_id == 16) {
+      tf::poseMsgToTF(cp.cartesian_pose.pose, right_tf);
+      right_found = true;
+    }
+  }
+
+  if (!left_found || !right_found) {
+    ROS_WARN("updateForwardKinematics: Missing left or right foot pose.");
+    return;
+  }
+
+  Eigen::Isometry3d left_ankle_pose, right_ankle_pose;
+  tf::poseTFToEigen(left_tf, left_ankle_pose);
+  tf::poseTFToEigen(right_tf, right_ankle_pose);
+
+  // Update the leg estimator with the new forward kinematics measurements.
+  leg_est_->setForwardKinematics(left_ankle_pose, right_ankle_pose);
 }
 
 } // namespace biped

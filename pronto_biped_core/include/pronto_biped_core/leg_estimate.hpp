@@ -8,7 +8,6 @@
 #include "pronto_biped_core/FootContact.hpp"
 #include "pronto_biped_core/FootContactAlt.hpp"
 #include "pronto_biped_core/foot_contact_classify.hpp"
-#include "pronto_biped_core/biped_forward_kinematics.hpp"
 #include <memory>
 
 namespace pronto {
@@ -27,8 +26,8 @@ struct LegOdometerConfig {
     bool publish_diagnostics = false;
     float total_force = 0.0;
     float standing_schmitt_level = 0.0;
-    float schmitt_low_threshold = 0;
-    float schmitt_high_threshold = 0;
+    float schmitt_low_threshold = 10;
+    float schmitt_high_threshold = 30;
     int schmitt_low_delay = 0;
     int schmitt_high_delay = 0;
 };
@@ -37,7 +36,7 @@ class LegEstimator {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   public:
-    LegEstimator(BipedForwardKinematics& fk, const LegOdometerConfig& cfg);
+    LegEstimator(const LegOdometerConfig& cfg);
     
     virtual ~LegEstimator();
     
@@ -59,6 +58,9 @@ public:
       n_control_contacts_left_  = n_control_contacts_left_in;
       n_control_contacts_right_ = n_control_contacts_right_in;
     }
+
+    inline void setForwardKinematics(const Eigen::Isometry3d& left,
+                                     const Eigen::Isometry3d& right);
     
     // Update the running leg odometry solution
     // returns: odometry_status - a foot contact classification
@@ -90,8 +92,14 @@ public:
         initialization_mode_ = initialization_mode_in;
     }
 
+
+    inline int getPrimaryFootID() const { return static_cast<int>(primary_foot_); }
+
 private:
-    BipedForwardKinematics& fk_;
+    // Store external FK measurements.
+    Eigen::Isometry3d ext_body_to_l_foot_;
+    Eigen::Isometry3d ext_body_to_r_foot_;
+
     // original method from Dehann uses a very conservative Schmitt trigger
     ContactStatusID footTransition();
     // a more aggressive trigger with different logic
