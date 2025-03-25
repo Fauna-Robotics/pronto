@@ -28,27 +28,22 @@ void BipedForwardKinematicsExternal::footPosesCallback(
 
   // Loop through each CartesianPose in the message.
   for (const auto& cp : msg->cartesian_poses) {
+    Eigen::Isometry3d iso;
+    tf2::fromMsg(cp.cartesian_pose.pose, iso);
     // Check joint_id: 15 for left foot, 16 for right foot.
     if (cp.joint_id == 15) {
-      tf::Transform tf_transform;
-      tf::poseMsgToTF(cp.cartesian_pose.pose, tf_transform);
-      Eigen::Isometry3d iso;
-      tf::poseTFToEigen(tf_transform, iso);
       left_foot_pose_ = iso;
       left_found = true;
     } else if (cp.joint_id == 16) {
-      tf::Transform tf_transform;
-      tf::poseMsgToTF(cp.cartesian_pose.pose, tf_transform);
-      Eigen::Isometry3d iso;
-      tf::poseTFToEigen(tf_transform, iso);
       right_foot_pose_ = iso;
       right_found = true;
     }
+
+    if (left_found && right_found)
+      break;
   }
-  if (left_found)
-    left_received_ = true;
-  if (right_found)
-    right_received_ = true;
+  if (left_found) left_received_ = true;
+  if (right_found) right_received_ = true;
 }
 
 bool BipedForwardKinematicsExternal::getLeftFootPose(
