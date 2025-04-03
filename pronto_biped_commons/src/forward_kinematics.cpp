@@ -1,15 +1,20 @@
 #include "pronto_biped_commons/forward_kinematics.hpp"
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace pronto {
 namespace biped {
+
+// Define constants for the foot joint IDs. These depend on the URDF
+static const int LEFT_FOOT_JOINT_ID = 15;
+static const int RIGHT_FOOT_JOINT_ID = 16;
 
 BipedForwardKinematicsExternal::BipedForwardKinematicsExternal(
     const ros::NodeHandle& nh)
     : nh_(nh) {
   foot_pose_sub_ =
-      nh_.subscribe("/biped/estimated_cartesian_poses", 1,
+      nh_.subscribe("/biped/cartesian_poses", 1,
                     &BipedForwardKinematicsExternal::footPosesCallback, this);
 
   // Initialize the stored poses to identity
@@ -19,22 +24,21 @@ BipedForwardKinematicsExternal::BipedForwardKinematicsExternal(
   right_received_ = false;
 }
 
-// Callback for BipedCartesianPoses messages.
+// Callback for BipedCartesianPoses messages
 void BipedForwardKinematicsExternal::footPosesCallback(
     const pronto_msgs::BipedCartesianPosesConstPtr& msg) {
   std::lock_guard<std::mutex> lock(mtx_);
   bool left_found = false;
   bool right_found = false;
 
-  // Loop through each CartesianPose in the message.
+  // Loop through each CartesianPose in the message
   for (const auto& cp : msg->cartesian_poses) {
     Eigen::Isometry3d iso;
     tf2::fromMsg(cp.cartesian_pose.pose, iso);
-    // Check joint_id: 15 for left foot, 16 for right foot.
-    if (cp.joint_id == 15) {
+    if (cp.joint_id == LEFT_FOOT_JOINT_ID) {
       left_foot_pose_ = iso;
       left_found = true;
-    } else if (cp.joint_id == 16) {
+    } else if (cp.joint_id == RIGHT_FOOT_JOINT_ID) {
       right_foot_pose_ = iso;
       right_found = true;
     }

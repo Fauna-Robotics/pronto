@@ -9,6 +9,10 @@
 namespace pronto {
 namespace biped {
 
+// Define constants for the foot joint IDs
+static const int LEFT_FOOT_JOINT_ID = 15;
+static const int RIGHT_FOOT_JOINT_ID = 16;
+
 LegOdometryModule::LegOdometryModule(const LegOdometryConfig &cfg) :
     leg_est_(new LegEstimator(cfg.odometer_cfg)),
     leg_odo_common_(new LegOdoCommon(cfg.common_cfg)),
@@ -142,11 +146,10 @@ void LegOdometryModule::updateForwardKinematics(
   // Loop over all CartesianPose entries
   for (size_t i = 0; i < fk_msg.cartesian_poses.size(); ++i) {
     const pronto_msgs::CartesianPose& cp = fk_msg.cartesian_poses[i];
-    // Check joint IDs: 15 for left foot, 16 for right foot // ANA make these global variables or input parameters
-    if (cp.joint_id == 15) {
+    if (cp.joint_id == LEFT_FOOT_JOINT_ID) {
       tf::poseMsgToTF(cp.cartesian_pose.pose, left_tf);
       left_found = true;
-    } else if (cp.joint_id == 16) {
+    } else if (cp.joint_id == RIGHT_FOOT_JOINT_ID) {
       tf::poseMsgToTF(cp.cartesian_pose.pose, right_tf);
       right_found = true;
     }
