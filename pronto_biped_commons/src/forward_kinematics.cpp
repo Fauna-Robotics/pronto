@@ -1,7 +1,7 @@
 #include "pronto_biped_commons/forward_kinematics.hpp"
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 namespace pronto {
 namespace biped {

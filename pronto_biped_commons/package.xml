@@ -18,13 +18,14 @@
   <build_depend>geometry_msgs</build_depend>
   <build_depend>tf_conversions</build_depend>
   <build_depend>pronto_biped_core</build_depend>
-  <build_depend>eigen_conversions</build_depend> <!-- Optional, if needed -->
+  <build_depend>tf2_eigen</build_depend>
 
   <!-- Execution dependencies -->
   <exec_depend>roscpp</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>tf_conversions</exec_depend>
   <exec_depend>pronto_biped_core</exec_depend>
+  <exec_depend>tf2_eigen</exec_depend>
 
   <export>
     <build_type>catkin</build_type>

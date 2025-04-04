@@ -10,13 +10,14 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   tf_conversions
   pronto_biped_core
+  tf2_eigen
 )
 find_package(Eigen3 REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp geometry_msgs tf_conversions pronto_biped_core
+  CATKIN_DEPENDS roscpp geometry_msgs tf_conversions pronto_biped_core tf2_eigen
   DEPENDS EIGEN3
 )
 
