@@ -40,7 +40,7 @@ FootContactAlt::FootContactAlt(bool _log_data_files,
   left_contact_state_strong_->forceHigh();
   right_contact_state_strong_->forceHigh();
   
-  verbose_ =1; // 3 lots, 2 some, 1 v.important
+  verbose_ = -1; // 3 lots, 2 some, 1 v.important
 }
 
 

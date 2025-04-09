@@ -16,8 +16,8 @@ InsHandlerROS::InsHandlerROS(ros::NodeHandle &nh) : nh_(nh)
     std::string imu_frame = "imu";
 
     nh_.getParam(ins_param_prefix + "frame", imu_frame);
-    std::string base_frame = "base";
-    nh_.param<std::string>("base_link_name", base_frame, "base");
+    std::string base_frame = "torso";
+    nh_.param<std::string>("base_link_name", base_frame, "torso");
     ROS_INFO_STREAM("[InsHandlerROS] Name of base_link: '" << base_frame << "'");
     Eigen::Isometry3d ins_to_body = Eigen::Isometry3d::Identity();
     while(nh_.ok()) {

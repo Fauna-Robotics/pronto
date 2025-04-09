@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pronto_biped_commons</name>
+  <version>0.0.1</version>
+  <description>
+    This package provides forward kinematics functionality for the biped, including
+    the external forward kinematics implementation.
+  </description>
+
+  <maintainer email="you@example.com">Your Name</maintainer>
+  <license>BSD</license>
+
+  <!-- Build tool dependency -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Build dependencies -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>tf_conversions</build_depend>
+  <build_depend>pronto_biped_core</build_depend>
+  <build_depend>tf2_eigen</build_depend>
+
+  <!-- Execution dependencies -->
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf_conversions</exec_depend>
+  <exec_depend>pronto_biped_core</exec_depend>
+  <exec_depend>tf2_eigen</exec_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+</package>

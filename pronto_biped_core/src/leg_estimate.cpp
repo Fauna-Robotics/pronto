@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include "pronto_biped_core/leg_estimate.hpp"
-#include "pronto_biped_core/biped_forward_kinematics.hpp"
 
 
 using namespace std;
@@ -40,14 +39,13 @@ LegEstimator::~LegEstimator(){
     }
 }
 
-LegEstimator::LegEstimator(BipedForwardKinematics& fk, const LegOdometerConfig& cfg) :
+LegEstimator::LegEstimator(const LegOdometerConfig& cfg) :
   initialization_mode_(cfg.initialization_mode),
   l_standing_link_(cfg.left_foot_name),
   r_standing_link_(cfg.right_foot_name),
   filter_joint_positions_(cfg.filter_mode),
   filter_contact_events_(cfg.filter_contact_events),
   publish_diagnostics_(cfg.publish_diagnostics),
-  fk_(fk),
   lfoot_sensing_(0,0,0),
   rfoot_sensing_(0,0,0),
   n_control_contacts_left_(-1),
@@ -122,7 +120,7 @@ LegEstimator::LegEstimator(BipedForwardKinematics& fk, const LegOdometerConfig& 
   //TODO class names with CamelCase: FootContactClassifier
   foot_contact_classify_.reset(new FootContactClassifier(publish_diagnostics_));
 
-  verbose_ = 1;
+  verbose_ = -1;
 
   previous_utime_ = 0; // Set utimes to known values
   current_utime_ = 0;
@@ -132,6 +130,12 @@ LegEstimator::LegEstimator(BipedForwardKinematics& fk, const LegOdometerConfig& 
   world_to_body_init_ = false;
   world_to_primary_foot_transition_init_ = false;
   world_to_body_constraint_init_ = false;
+}
+
+void LegEstimator::setForwardKinematics(const Eigen::Isometry3d& left,
+                                        const Eigen::Isometry3d& right) {
+  ext_body_to_l_foot_ = left;
+  ext_body_to_r_foot_ = right;
 }
 
 bool LegEstimator::getLegOdometryDelta(Eigen::Isometry3d &odom_to_body_delta,
@@ -216,7 +220,7 @@ bool LegEstimator::prepInitialization(const Eigen::Isometry3d &body_to_l_foot,
       init_this_iteration = true;
     }
   }else if  (contact_status == ContactStatusID::RIGHT_FIXED){
-    std::cout << "Initialize Leg Odometry using left foot\n";
+    std::cout << "Initialize Leg Odometry using right foot\n";
     bool success = initializePose(body_to_r_foot); // typical init mode =0
     if (success){
       // if successful, complete initialization
@@ -260,7 +264,7 @@ bool LegEstimator::legOdometryGravitySlavedAlways(const Eigen::Isometry3d& body_
     odom_to_body_ = odom_to_primary_foot_fixed_ * body_to_l_foot.inverse() ;
     odom_to_secondary_foot_ = odom_to_body_ * body_to_r_foot;
   }else if (contact_status == ContactStatusID::RIGHT_NEW && primary_foot_ == FootID::LEFT){
-    std::cout << "2 Transition Odometry to right foot. Fix foot, update pelvis position\n";
+    if (verbose_>1) std::cout << "2 Transition Odometry to right foot. Fix foot, update pelvis position\n";
     // When transitioning, take the passive position of the other foot
     // from the previous iteration. this will now be the fixed foot
     // At the instant of transition, slave the pelvis position to gravity:
@@ -292,7 +296,7 @@ bool LegEstimator::legOdometryGravitySlavedAlways(const Eigen::Isometry3d& body_
     odom_to_body_ = odom_to_primary_foot_fixed_ * body_to_r_foot.inverse() ;
     odom_to_secondary_foot_ = odom_to_body_ * body_to_l_foot;
   }else if (contact_status == ContactStatusID::LEFT_NEW && primary_foot_ == FootID::RIGHT){
-    std::cout << "2 Transition Odometry to left foot. Fix foot, update pelvis position\n";
+    if (verbose_>1) std::cout << "2 Transition Odometry to left foot. Fix foot, update pelvis position\n";
 
     // When transitioning, take the passive position of the other foot
     // from the previous iteration. this will now be the fixed foot
@@ -308,7 +312,7 @@ bool LegEstimator::legOdometryGravitySlavedAlways(const Eigen::Isometry3d& body_
     odom_to_secondary_foot_ = odom_to_body_ * body_to_r_foot;
     primary_foot_ = FootID::LEFT;
   }else{
-    std::cout << "initialized but unknown update: " << static_cast<int>(contact_status) << " and " << (int) primary_foot_ << "\n";
+    if (verbose_>1) std::cout << "initialized but unknown update: " << static_cast<int>(contact_status) << " and " << (int) primary_foot_ << "\n";
   }
 
   return init_this_iteration;
@@ -461,19 +465,10 @@ float LegEstimator::updateOdometry(const std::vector<std::string>& joint_name,
       filtered_joint_position_ = joint_position;
   }
 
+  // 1. Use externally provided forward kinematics:
+  Eigen::Isometry3d body_to_l_foot = ext_body_to_l_foot_;
+  Eigen::Isometry3d body_to_r_foot = ext_body_to_r_foot_;
 
-  // 1. Solve for Forward Kinematics:
-  Eigen::Isometry3d body_to_l_foot = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d body_to_r_foot = Eigen::Isometry3d::Identity();
-
-  bool kinematics_status = fk_.getLeftFootPose(filtered_joint_position_, body_to_l_foot);
-  kinematics_status = kinematics_status & fk_.getRightFootPose(filtered_joint_position_, body_to_r_foot);
-
-
-  if (!kinematics_status) {
-    cerr << "Error: could not calculate forward kinematics!" << endl;
-    exit(-1);
-  }
   // 2. Determine Primary Foot State
 
   // 5. Analyse signals to infer covariance
@@ -509,7 +504,7 @@ float LegEstimator::updateOdometry(const std::vector<std::string>& joint_name,
 
     if ((contact_status == ContactStatusID::LEFT_NEW) || (contact_status == ContactStatusID::RIGHT_NEW) )
     {
-      std::cout << "3 Leg Estimate: Changing Foot Constraint\n";
+      if (verbose_>1) std::cout << "3 Leg Estimate: Changing Foot Constraint\n";
       world_to_primary_foot_transition_ = world_to_primary_foot_slide_;
       world_to_primary_foot_transition_init_ = true;
       if (publish_diagnostics_) { // this was enabled by default for a long time

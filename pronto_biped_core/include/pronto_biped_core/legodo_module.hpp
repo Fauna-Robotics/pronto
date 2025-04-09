@@ -4,7 +4,7 @@
 #include <pronto_core/definitions.hpp>
 #include "pronto_biped_core/leg_estimate.hpp"
 #include "pronto_biped_core/legodo_common.hpp"
-#include "pronto_biped_core/biped_forward_kinematics.hpp"
+#include "pronto_msgs/BipedCartesianPoses.h"
 #include <pronto_utils/torque_adjustment.hpp> // torque adjustment
 
 namespace pronto {
@@ -21,7 +21,7 @@ struct LegOdometryConfig {
 
 class LegOdometryModule : SensingModule<JointState> {
 public:
-    LegOdometryModule(BipedForwardKinematics& fk, const LegOdometryConfig& cfg);
+    LegOdometryModule(const LegOdometryConfig& cfg);
 
     RBISUpdateInterface* processMessage(const JointState *msg,
                                         StateEstimator *est);
@@ -38,7 +38,14 @@ public:
 
     void setForceTorque(const ForceTorqueSensorArray& array);
 
+    void updateForwardKinematics(const pronto_msgs::BipedCartesianPoses& fk_msg);
 
+    int getPrimaryFootID() const {
+        if (leg_est_) {
+        return leg_est_->getPrimaryFootID();
+        }
+        return -1;
+    }
 
 protected:
     std::shared_ptr<LegEstimator> leg_est_;

@@ -9,13 +9,14 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   kdl_parser
   tf2_eigen
+  pronto_biped_commons
 )
 
 find_package(Eigen3 REQUIRED)
 
 catkin_package(INCLUDE_DIRS include
                LIBRARIES ${PROJECT_NAME}
-               CATKIN_DEPENDS pronto_biped_core sensor_msgs kdl_parser tf2_eigen
+               CATKIN_DEPENDS pronto_biped_core sensor_msgs kdl_parser tf2_eigen pronto_biped_commons
                DEPENDS EIGEN3)
 
 include_directories(include ${catkin_INCLUDE_DIRS})

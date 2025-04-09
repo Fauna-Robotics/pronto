@@ -10,8 +10,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>pronto_biped_core</build_depend>
+  <build_depend>pronto_biped_commons</build_depend>
   <build_export_depend>pronto_biped_core</build_export_depend>
+  <build_export_depend>pronto_biped_commons</build_export_depend>
   <exec_depend>pronto_biped_core</exec_depend>
+  <exec_depend>pronto_biped_commons</exec_depend>
   <depend>sensor_msgs</depend>
   <depend>pronto_ros</depend>
   <depend>kdl_parser</depend>

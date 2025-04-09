@@ -19,7 +19,7 @@ FootContactClassifier::FootContactClassifier(bool publish_diagnostics_) :
   initialized_ = false;
   mode_ = WalkMode::UNKNOWN;
   previous_mode_ = WalkMode::UNKNOWN;
-  verbose_ = 3; // 3 lots, 2 some, 1 v.important, 0 typical for debug, -1 typical for operation
+  verbose_ = -1; // 3 lots, 2 some, 1 v.important, 0 typical for debug, -1 typical for operation
 
   // defaults dehann used: 0, 5, 5000 but foot doesnt 'hang' like in VRC
   left_contact_state_weak_  = new SchmittTrigger(20.0, 30.0, 5000, 5000);
@@ -187,12 +187,12 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
 
   if (!initialized_){
     if (left_contact && right_contact){
-      std::cout << pv << ">0 | Initializing. both in contact with left foot as primary\n";
+      if (verbose_ >= 1) std::cout << pv << ">0 | Initializing. both in contact with left foot as primary\n";
       mode_ = WalkMode::LEFT_PRIME_RIGHT_STAND;
       initialized_ = true;
       return 2;
     }else{
-      std::cout << pv << ">8 | Not initialized yet: both feet are not in contact\n";
+      if (verbose_ >= 1) std::cout << pv << ">8 | Not initialized yet: both feet are not in contact\n";
       return -1;
     }
   }
@@ -217,7 +217,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 3) std::cout << pv << ">0 | primary left. both in contact. still [LEFT_PRIME_RIGHT_STAND]\n";
         return 2;
       } else {
-        std::cout << "Unknown LEFT_PRIME_RIGHT_STAND Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_PRIME_RIGHT_STAND Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -235,7 +235,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 3) std::cout << pv << ">1 | primary left still in contact but right weak. still\n";
         return -1;
       }else{
-        std::cout << "Unknown LEFT_PRIME_RIGHT_BREAK Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_PRIME_RIGHT_BREAK Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -253,7 +253,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 1) std::cout << pv << ">2 | Error: neither foot in contact! Staying in [LEFT_PRIME_RIGHT_SWING]\n";
         return 2;
       }else{
-        std::cout << "Unknown LEFT_PRIME_RIGHT_SWING Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_PRIME_RIGHT_SWING Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -266,7 +266,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 3) std::cout << pv << ">3 | primary left. right weak. still [LEFT_PRIME_RIGHT_STRIKE] \n";
         return -1;
       }else{
-        std::cout << "Unknown LEFT_PRIME_RIGHT_STRIKE Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_PRIME_RIGHT_STRIKE Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -285,7 +285,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 3) std::cout << pv << ">4 | primary left. both in contact. still [LEFT_STAND_RIGHT_PRIME]\n";
         return 2;
       }else{
-        std::cout << "Unknown LEFT_STAND_RIGHT_PRIME Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_STAND_RIGHT_PRIME Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -302,7 +302,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 3) std::cout << pv << ">5 | primary right. left weak. still [LEFT_BREAK_RIGHT_PRIME]\n";
         return -1;
       }else{
-        std::cout << "Unknown LEFT_BREAK_RIGHT_PRIME Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_BREAK_RIGHT_PRIME Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -320,7 +320,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 1) std::cout << pv << ">6 | Error: neither foot in contact! Staying in [LEFT_SWING_RIGHT_PRIME]\n";
         return 3;
       }else{
-        std::cout << "Unknown LEFT_SWING_RIGHT_PRIME Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_SWING_RIGHT_PRIME Transition: " << pv<< "\n";
         return -2;
       }
       break;
@@ -333,7 +333,7 @@ int FootContactClassifier::updateWalkingPhase(int64_t utime,
         if (verbose_ >= 3) std::cout << pv << ">7 | primary right. left weak. still [LEFT_STRIKE_RIGHT_PRIME] \n";
         return -1;
       }else{
-        std::cout << "Unknown LEFT_STRIKE_RIGHT_PRIME Transition: " << pv<< "\n";
+        if (verbose_ >= 1) std::cout << "Unknown LEFT_STRIKE_RIGHT_PRIME Transition: " << pv<< "\n";
         return -2;
       }
       break;
